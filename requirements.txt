@@ -1,0 +1,5 @@
+paho-mqtt
+easydict
+configparser
+flask
+pybluez

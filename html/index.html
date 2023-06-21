@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graphique des données</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="35">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #222;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background-color: #333;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+        }
+        .chart-container {
+            max-width: 1000px;
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #tableContainer {
+            width: 30%;
+            max-width: 400px;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #333;
+            padding: 10px;
+            margin-left: 40px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #fff;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Graphique des données</h1>
+    <div class="container">
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+        <div id="tableContainer"></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script>
+    fetch('getdata.php')
+        .then(response => response.json())
+        .then(data => {
+            const reversedData = data.reverse(); // Inverser l'ordre des données
+
+            const labels = [];
+            const wifiValues = [];
+            const bluetoothValues = [];
+
+            for (let item of reversedData) {
+                if (item.timestamp && item.type_capteur && item.valeur && item.salle) {
+                    const timestamp = moment(item.timestamp).format("HH:mm:ss");
+                    if (!labels.includes(timestamp)) {
+                        labels.push(timestamp);
+                        wifiValues.push(null);
+                        bluetoothValues.push(null);
+                    }
+                    const index = labels.indexOf(timestamp);
+                    if (item.type_capteur === 'Wi-Fi') {
+                        wifiValues[index] = Math.round(Number(item.valeur));
+                    } else if (item.type_capteur === 'Bluetooth') {
+                        bluetoothValues[index] = Math.round(Number(item.valeur));
+                    }
+                }
+            }
+
+            labels.reverse();
+            wifiValues.reverse();
+            bluetoothValues.reverse();
+
+            new Chart(document.getElementById('chart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Wi-Fi',
+                            data: wifiValues,
+                            borderColor: 'rgb(255, 99, 132)',
+                            fill: false,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Bluetooth',
+                            data: bluetoothValues,
+                            borderColor: 'rgb(75, 192, 192)',
+                            fill: false,
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#fff'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Graphique des données',
+                            color: '#fff'
+                        },
+                        datalabels: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                                color: '#ccc'
+                            },
+                            ticks: {
+                                color: '#fff'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                borderDash: [6, 4],
+                                color: '#ccc'
+                            },
+                            ticks: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const table = "<table><tr><th>Timestamp</th><th>Type Capteur</th><th>Valeur</th><th>Lieu</th></tr>" +
+                reversedData
+                    .filter(row => row.timestamp && row.type_capteur && row.valeur && row.salle)
+                    .map(row => "<tr><td>" + row.timestamp + "</td><td>" + row.type_capteur + "</td><td>" + Math.round(Number(row.valeur)) + "</td><td>" + row.salle + "</td></tr>")
+                    .join("") +
+                "</table>";
+            document.getElementById('tableContainer').innerHTML = table;
+        });
+    </script>
+</body>
+</html>
